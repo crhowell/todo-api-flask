@@ -7,7 +7,7 @@ angular.module('todoListApp')
   
   $scope.addTodo = function() {
     var todo = new Todo();
-    todo.name = 'New task!'
+    todo.name = 'New task!';
     todo.completed = false;
     $scope.todos.unshift(todo);
   };

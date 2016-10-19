@@ -36,7 +36,7 @@ class User(Model):
             user.save()
             return user
         else:
-            raise Exception("User with that email or username already exists")
+            raise ValueError("User with that email or username already exists")
 
     @staticmethod
     def verify_auth_token(token):
@@ -62,8 +62,7 @@ class User(Model):
 
 
 class Todo(Model):
-    name = CharField(max_length=100)
-    description = CharField()
+    name = CharField()
     created_at = DateTimeField(default=datetime.datetime.now)
     modified_on = DateTimeField(default=datetime.datetime.now)
     user = ForeignKeyField(User, related_name='todo_set')

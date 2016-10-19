@@ -11,7 +11,6 @@ import models
 
 todo_fields = {
     'name': fields.String,
-    'description': fields.String,
     'created_at': fields.DateTime,
     'modified_on': fields.DateTime,
     'user': fields.String,
@@ -36,18 +35,12 @@ class TodoList(Resource):
             help='No name provided',
             location=['form', 'json']
         )
-        self.reqparse.add_argument(
-            'description',
-            required=True,
-            help='No name provided',
-            location=['form', 'json']
-        )
         super().__init__()
 
     def get(self):
         todos = [marshal(todo, todo_fields)
                  for todo in models.Todo.select()]
-        return {'todos': todos}
+        return todos
 
     @marshal_with(todo_fields)
     @auth.login_required
@@ -71,12 +64,6 @@ class Todo(Resource):
             'name',
             required=True,
             help='No todo name provided',
-            location=['form', 'json']
-        )
-        self.reqparse.add_argument(
-            'description',
-            required=True,
-            help='No todo description provided',
             location=['form', 'json']
         )
         super().__init__()
