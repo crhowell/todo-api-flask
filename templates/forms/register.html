@@ -5,19 +5,31 @@
 {% block content %}
     <h1>Register</h1>
     <hr/>
-    <form class="form" action="" method="POST">
-        {{ form.hidden_tag() }}
+    <form action="{{ url_for('register') }}" method="POST">
+    {{ form.hidden_tag() }}
+
         {% for field in form %}
-            <div class="field">
-                {% if field.errors %}
-                    {% for error in field.errors %}
-                        <div class="notification error">
-                            {{ error }}
-                        </div>
-                    {% endfor %}
-                {% endif %}
-                {{ field(placeholder=field.label.text) }}
+        <div class="form-group row">
+            <div class="col-xs-10">
+            {% if field.errors %}
+                {% for error in field.errors %}
+                    <div class="notification error">
+                        {{ error }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            {{ field(placeholder=field.label.text, class="form-control") }}
             </div>
-        {% endfor %}
+        </div>
+    {% endfor %}
+
+    <div class="form-group row">
+        <button type="submit" class="btn btn-lg">Submit</button>
+    </div>
+
+
+
+
     </form>
 {% endblock %}

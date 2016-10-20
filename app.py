@@ -1,6 +1,9 @@
 from flask import (Flask, g, jsonify, render_template,
-                   redirect, url_for, flash)
-from flask.ext.login import LoginManager
+                   redirect, url_for, flash, request)
+
+from flask_login import (LoginManager, login_user, logout_user,
+                         current_user, login_required)
+
 import config
 from auth import auth
 from resources.todos import todos_api
@@ -15,19 +18,19 @@ app.register_blueprint(todos_api, url_prefix='/api/v1')
 app.register_blueprint(users_api, url_prefix='/api/v1')
 
 login_manager = LoginManager()
-login_manager.init_app(app)
 login_manager.login_view = 'login'
+login_manager.init_app(app)
 
 
 @login_manager.user_loader
 def load_user(userid):
     try:
-        return models.User.get(models.User.id==userid)
+        return models.User.get(models.User.id == userid)
     except models.DoesNotExist:
         return None
 
 
-@app.route('/login', methods=('GET', 'POST'))
+@app.route('/register', methods=('GET', 'POST'))
 def register():
     form = forms.RegisterForm()
     if form.validate_on_submit():
@@ -37,18 +40,33 @@ def register():
             email=form.email.data,
             password=form.password.data
         )
-        return redirect(url_for('my_todos'))
+        return redirect(url_for('login'))
     return render_template('forms/register.html', form=form)
 
 
 @app.route('/login', methods=('GET', 'POST'))
 def login():
-    pass
+    form = forms.LoginForm()
+    if form.validate_on_submit():
+        try:
+            user = models.User.get(models.User.username == form.username.data)
+        except models.DoesNotExist:
+            flash('Your username or password does not match', 'error')
+        else:
+            if user and user.verify_password(form.password.data):
+                login_user(user)
+                flash('You have been logged in!', 'success')
+                return redirect(url_for('my_todos'))
+            else:
+                flash('Your username or password does not match!', 'error')
+    return render_template('forms/login.html', form=form)
 
 
-@app.route('/logout', methods=('GET',))
+@app.route('/logout')
+@login_required
 def logout():
-    pass
+    logout_user()
+    return redirect(url_for('my_todos'))
 
 
 @app.route('/')

@@ -39,9 +39,14 @@ class RegisterForm(Form):
         validators=[
             DataRequired(),
             Length(min=4),
-            EqualTo('password2', message='Passwords must match')
+            EqualTo('verify_password', message='Passwords must match')
         ])
-    password2 = PasswordField(
+    verify_password = PasswordField(
         'Confirm Password',
         validators=[DataRequired()]
     )
+
+
+class LoginForm(Form):
+    username = StringField('Username', validators=[DataRequired()])
+    password = PasswordField('Password', validators=[DataRequired()])

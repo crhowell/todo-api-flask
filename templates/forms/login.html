@@ -1,7 +1,16 @@
-<form class="form" action="" method="POST">
+{% extends 'base/layout.html' %}
+
+{% block title %}Login{% endblock %}
+
+{% block content %}
+    <h1>Login</h1>
+    <hr/>
+    <form action="{{ url_for('login') }}" method="POST">
     {{ form.hidden_tag() }}
-    {% for field in form %}
-        <div class="field">
+
+        {% for field in form %}
+        <div class="form-group row">
+            <div class="col-xs-10">
             {% if field.errors %}
                 {% for error in field.errors %}
                     <div class="notification error">
@@ -9,7 +18,18 @@
                     </div>
                 {% endfor %}
             {% endif %}
-            {{ field(placeholder=field.label.text) }}
+
+            {{ field(placeholder=field.label.text, class="form-control") }}
+            </div>
         </div>
     {% endfor %}
-</form>
+
+    <div class="form-group row">
+        <button type="submit" class="btn btn-lg">Sign in</button>
+    </div>
+
+
+
+
+    </form>
+{% endblock %}

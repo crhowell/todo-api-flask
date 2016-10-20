@@ -1,6 +1,6 @@
-from flask import g
+from flask import g, make_response, jsonify
 
-from flask.ext.httpauth import HTTPBasicAuth, HTTPTokenAuth, MultiAuth
+from flask_httpauth import HTTPBasicAuth, HTTPTokenAuth, MultiAuth
 
 import models
 
@@ -32,3 +32,13 @@ def verify_token(token):
         g.user = user
         return True
     return False
+
+
+@basic_auth.error_handler
+def unauthorized():
+    return make_response(jsonify({'message': 'Unauthorized access'}), 403)
+
+
+@token_auth.error_handler
+def auth_error():
+    return make_response(jsonify({'message': 'Unauthorized access'}), 401)

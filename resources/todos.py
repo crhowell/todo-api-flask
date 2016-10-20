@@ -10,10 +10,11 @@ from auth import auth
 import models
 
 todo_fields = {
+    'id': fields.Integer,
     'name': fields.String,
+    'completed': fields.Boolean,
     'created_at': fields.DateTime,
-    'modified_on': fields.DateTime,
-    'user': fields.String,
+    'modified_on': fields.DateTime
 }
 
 
@@ -35,14 +36,20 @@ class TodoList(Resource):
             help='No name provided',
             location=['form', 'json']
         )
+        self.reqparse.add_argument(
+            'completed',
+            required=False,
+            default=False,
+            type=inputs.boolean,
+            location=['form', 'json']
+        )
         super().__init__()
 
     def get(self):
-        todos = [marshal(todo, todo_fields)
-                 for todo in models.Todo.select()]
-        return todos
+        todos = models.Todo.select().order_by(
+            models.Todo.created_at.desc(), models.Todo.completed)
+        return [marshal(todo, todo_fields) for todo in todos]
 
-    @marshal_with(todo_fields)
     @auth.login_required
     def post(self):
         args = self.reqparse.parse_args()
@@ -52,7 +59,7 @@ class TodoList(Resource):
             user=g.user,
             **args
         )
-        return (todo, 201, {
+        return (marshal(todo, todo_fields), 201, {
             'Location': url_for('resources.todos.todo', id=todo.id)
         })
 
@@ -66,45 +73,55 @@ class Todo(Resource):
             help='No todo name provided',
             location=['form', 'json']
         )
+        self.reqparse.add_argument(
+            'completed',
+            required=False,
+            default=False,
+            type=inputs.boolean,
+            location=['form', 'json']
+        )
         super().__init__()
 
-    @marshal_with(todo_fields)
     def get(self, id):
-        return todo_or_404(id)
+        return (marshal(todo_or_404(id), todo_fields), 200, {
+            'Location': url_for('resources.todos.todo', id=id)
+        })
 
-    @marshal_with(todo_fields)
     @auth.login_required
     def put(self, id):
         args = self.reqparse.parse_args()
         try:
-            todo = models.Todo.select().where(
-                models.Todo.user==g.user,
-                models.Todo.id==id
-            ).get()
+            todo = models.Todo.select().where(models.Todo.id==id).get()
         except models.Todo.DoesNotExist:
             return make_response(json.dumps(
                 {'error': 'That review does not exist or is not editable'}
             ), 403)
-        query = todo.update(**args)
+        if todo.user != g.user:
+            return make_response(json.dumps(
+                {'error': 'You cannot update this task because you are not the owner.'}
+            ))
+        query = todo.update(
+            modified_on=datetime.datetime.now(),
+            **args
+        )
         query.execute()
-        todo = todo_or_404(id)
-        return (todo, 200, {
+        return (marshal(todo_or_404(id), todo_fields), 200, {
             'Location': url_for('resources.todos.todo', id=id)
         })
 
     @auth.login_required
     def delete(self, id):
         try:
-            todo = models.Todo.select().where(
-                models.Todo.user==g.user,
-                models.Todo.id==id
-            ).get()
+            todo = todo_or_404(id)
         except models.Todo.DoesNotExist:
             return make_response(json.dumps(
                 {'error': 'That TODO  does not exist or is not editable'}
             ), 403)
-        query = todo.delete()
-        query.execute()
+        if todo.user != g.user:
+            return make_response(json.dumps(
+                {'error': 'You cannot delete this because you are not the owner.'}
+            ))
+        todo.delete_instance()
         return '', 204, {'Location': url_for('resources.todos.todos')}
 
 

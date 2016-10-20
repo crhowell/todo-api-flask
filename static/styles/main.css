@@ -69,3 +69,8 @@ input[type="checkbox"] + span {
 input[type="checkbox"]:checked + span {
     background:url(checkbox-filled.svg) left top no-repeat;
 }
+.navbar-inverse{
+  background-color: #5a6772;
+  border-color: #5a6772;
+  border-radius: 0;
+}
