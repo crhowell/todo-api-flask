@@ -9,10 +9,12 @@ from peewee import *
 import config
 
 
-DATABASE = SqliteDatabase('todos.sqlite')
+
 HASHER = PasswordHasher()
 
 login_serializer = URLSafeTimedSerializer(config.SECRET_KEY)
+
+DATABASE = config.DATABASE
 
 
 class User(UserMixin, Model):
