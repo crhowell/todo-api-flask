@@ -46,7 +46,6 @@ def load_token(token):
     #on the users computer it also has a exipry date, but could be changed by
     #the user, so this feature allows us to enforce the exipry date of the token
     #server side and not rely on the users cookie to exipre.
-    print('This is our token_loader: ', token)
     max_age = app.config["REMEMBER_COOKIE_DURATION"].total_seconds()
 
     #Decrypt the Security Token, data = [username, hashpass]

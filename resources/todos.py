@@ -53,7 +53,6 @@ class TodoList(Resource):
     @auth.login_required
     def post(self):
         args = self.reqparse.parse_args()
-        print(args)
         todo = models.Todo.create(
             created_at=datetime.datetime.now(),
             modified_on=datetime.datetime.now(),
@@ -91,7 +90,6 @@ class Todo(Resource):
     @auth.login_required
     def put(self, id):
         args = self.reqparse.parse_args()
-        print(args, ' ID: ', id)
         try:
             todo = todo_or_404(id)
         except models.Todo.DoesNotExist:
@@ -109,7 +107,7 @@ class Todo(Resource):
             modified_on=datetime.datetime.now(),
             **args
         ).where(models.Todo.id == id)
-        print(query)
+
         query.execute()
         return (marshal(todo_or_404(id), todo_fields), 200, {
             'Location': url_for('resources.todos.todo', id=id)
