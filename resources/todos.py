@@ -1,10 +1,10 @@
 import datetime
 import json
 
-from flask import jsonify, Blueprint, g, abort, make_response
+from flask import Blueprint, g, abort, make_response
 
 from flask_restful import (Resource, Api, reqparse, url_for,
-                           inputs, fields, marshal, marshal_with)
+                           inputs, fields, marshal)
 
 from auth import auth
 import models
@@ -20,7 +20,7 @@ todo_fields = {
 
 def todo_or_404(todo_id):
     try:
-        todo = models.Todo.get(models.Todo.id==todo_id)
+        todo = models.Todo.get(id=todo_id)
     except models.Todo.DoesNotExist:
         abort(404)
     else:
@@ -53,10 +53,11 @@ class TodoList(Resource):
     @auth.login_required
     def post(self):
         args = self.reqparse.parse_args()
+        print(args)
         todo = models.Todo.create(
             created_at=datetime.datetime.now(),
             modified_on=datetime.datetime.now(),
-            user=g.user,
+            user=g.user.id,
             **args
         )
         return (marshal(todo, todo_fields), 201, {
@@ -90,20 +91,25 @@ class Todo(Resource):
     @auth.login_required
     def put(self, id):
         args = self.reqparse.parse_args()
+        print(args, ' ID: ', id)
         try:
-            todo = models.Todo.select().where(models.Todo.id==id).get()
+            todo = todo_or_404(id)
         except models.Todo.DoesNotExist:
             return make_response(json.dumps(
                 {'error': 'That review does not exist or is not editable'}
             ), 403)
-        if todo.user != g.user:
+
+        # Make sure current user owns task.
+        if todo.user.id != g.user.id:
             return make_response(json.dumps(
                 {'error': 'You cannot update this task because you are not the owner.'}
-            ))
+            ), 401)
+
         query = todo.update(
             modified_on=datetime.datetime.now(),
             **args
-        )
+        ).where(models.Todo.id == id)
+        print(query)
         query.execute()
         return (marshal(todo_or_404(id), todo_fields), 200, {
             'Location': url_for('resources.todos.todo', id=id)
@@ -117,10 +123,12 @@ class Todo(Resource):
             return make_response(json.dumps(
                 {'error': 'That TODO  does not exist or is not editable'}
             ), 403)
-        if todo.user != g.user:
+        # Make sure current user owns task.
+        if todo.user.id != g.user.id:
             return make_response(json.dumps(
-                {'error': 'You cannot delete this because you are not the owner.'}
-            ))
+                {'error': 'You cannot delete this task because you are not the owner.'}
+            ), 401)
+
         todo.delete_instance()
         return '', 204, {'Location': url_for('resources.todos.todos')}
 

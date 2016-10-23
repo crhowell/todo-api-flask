@@ -1,14 +1,25 @@
 import json
-from flask import jsonify, Blueprint, make_response
+from flask import jsonify, Blueprint, make_response, abort, g
 
 from flask_restful import (Resource, Api, reqparse,
                            inputs, fields, marshal, marshal_with)
-
+from auth import auth
 import models
 
 user_fields = {
     'username': fields.String
 }
+
+
+def user_or_404(username, password):
+    try:
+        user = models.User.get(username==username)
+    except models.User.DoesNotExist:
+        abort(404)
+    else:
+        if user and user.verify_password(password):
+            return user
+    return None
 
 
 class UserList(Resource):
@@ -51,6 +62,17 @@ class UserList(Resource):
         )
 
 
+class User(Resource):
+    def __init__(self):
+        self.reqparse = reqparse.RequestParser()
+
+    @auth.login_required
+    def get(self):
+        token = g.user.generate_auth_token()
+        return jsonify({'token': token.decode('ascii')})
+
+
 users_api = Blueprint('resources.users', __name__)
 api = Api(users_api)
 api.add_resource(UserList, '/users', endpoint='users')
+api.add_resource(User, '/users/token', endpoint='token')

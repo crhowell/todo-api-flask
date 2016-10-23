@@ -3,7 +3,7 @@ import datetime
 from flask_login import UserMixin
 from argon2 import PasswordHasher
 from itsdangerous import (TimedJSONWebSignatureSerializer as Serializer,
-                          BadSignature, SignatureExpired)
+                          BadSignature, SignatureExpired, URLSafeTimedSerializer)
 from peewee import *
 
 import config
@@ -11,6 +11,8 @@ import config
 
 DATABASE = SqliteDatabase('todos.sqlite')
 HASHER = PasswordHasher()
+
+login_serializer = URLSafeTimedSerializer(config.SECRET_KEY)
 
 
 class User(UserMixin, Model):
@@ -47,7 +49,7 @@ class User(UserMixin, Model):
         except (SignatureExpired, BadSignature):
             return None
         else:
-            user = User.get(User.id==data['id'])
+            user = User.get(id=data['id'])
             return user
 
     @staticmethod
@@ -56,6 +58,10 @@ class User(UserMixin, Model):
 
     def verify_password(self, password):
         return HASHER.verify(self.password, password)
+
+    def get_auth_token(self):
+        data = [str(self.id), self.password]
+        return login_serializer.dumps(data)
 
     def generate_auth_token(self, expires=3600):
         serializer = Serializer(config.SECRET_KEY, expires_in=expires)

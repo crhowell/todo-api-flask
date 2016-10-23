@@ -9,24 +9,32 @@ token_auth = HTTPTokenAuth(scheme='Token')
 auth = MultiAuth(token_auth, basic_auth)
 
 
+@basic_auth.get_password
+def get_password(username):
+    user = models.User.get(username=username)
+    if user is not None:
+        return user.password
+    return None
+
+
 @basic_auth.verify_password
-def verify_password(email_or_username, password):
-    try:
-        user = models.User.get(
-            (models.User.email == email_or_username) |
-            (models.User.username == email_or_username)
-        )
-        if not user.verify_password(password):
+def verify_password(username_or_token, password):
+    # first try to authenticate by token
+    user = models.User.verify_auth_token(username_or_token)
+    if not user:
+        # try to authenticate with username/password
+        user = models.User.get(username=username_or_token)
+        if not user or not user.verify_password(password):
             return False
-    except models.User.DoesNotExist:
-        return False
-    else:
-        g.user = user
-        return True
+    g.user = user
+    return True
 
 
 @token_auth.verify_token
 def verify_token(token):
+    if not token and g.user.is_authenticated:
+        token = g.user.generate_auth_token()
+
     user = models.User.verify_auth_token(token)
     if user is not None:
         g.user = user
